@@ -1,230 +1,3 @@
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import { Alert, AlertDescription } from "@/components/ui/alert";
-// import { Loader2 } from "lucide-react";
-// import { DocuChatWidget } from "../DocChatWidget";
-
-// interface LoginFlowProps {
-//   userType: "citizen" | "officer";
-//   onLogin: () => void;
-//   onBack: () => void;
-// }
-
-// export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
-//   const navigate = useNavigate();
-//   const [step, setStep] = useState<"mobile" | "otp" | "digilocker">("mobile");
-//   const [mobileNumber, setMobileNumber] = useState("");
-//   const [otp, setOtp] = useState("");
-//   const [isExistingUser, setIsExistingUser] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [loading, setLoading] = useState(false);
-//   const [isSubmitting, setIsSubmitting] = useState(false);
-
-//   const handleOTPSubmit = async () => {
-//     if (!otp) {
-//       setError("Please enter OTP");
-//       return;
-//     }
-
-//     setLoading(true);
-//     setError(null);
-
-//     try {
-//       // Here you would typically make an API call to verify the OTP
-//       // For now, we'll simulate a successful verification
-//       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-//       // Clear the error state
-//       setError(null);
-
-//       // Redirect based on user type
-//       if (userType === "citizen") {
-//         navigate("/citizen-dashboard");
-//       } else {
-//         navigate("/officer-dashboard");
-//       }
-
-//       // Also call the onLogin callback
-//       onLogin();
-//     } catch (error) {
-//       setError("Invalid OTP. Please try again.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleLogin = async () => {
-//     try {
-//       setIsSubmitting(true);
-//       setError(null);
-
-//       // Mock API call - replace with actual implementation
-//       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-//       // For existing users, just verify mobile and OTP
-//       if (isExistingUser) {
-//         // Mock OTP verification
-//         if (otp === "123456") {
-//           onLogin();
-//         } else {
-//           setError("Invalid OTP");
-//         }
-//       } else {
-//         // For new users, mock DigiLocker verification
-//         if (mobileNumber.length === 10 && otp === "123456") {
-//           onLogin();
-//         } else {
-//           setError(
-//             "Please verify your DigiLocker and enter valid mobile number"
-//           );
-//         }
-//       }
-//     } catch (err) {
-//       setError("Failed to authenticate");
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
-
-//   const handleMobileSubmit = () => {
-//     if (mobileNumber.length !== 10) {
-//       setError("Please enter a valid 10 digit mobile number");
-//       return;
-//     }
-
-//     if (isExistingUser) {
-//       setStep("otp");
-//     } else {
-//       setStep("digilocker");
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center p-4 relative">
-//       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100" />
-
-//       <Card className="w-full max-w-md relative z-10">
-//         <CardHeader>
-//           <CardTitle className="text-2xl text-center">
-//             {userType === "citizen" ? "Citizen Login" : "Officer Login"}
-//           </CardTitle>
-//         </CardHeader>
-
-//         <CardContent className="space-y-6">
-//           {error && (
-//             <Alert variant="destructive">
-//               <AlertDescription>{error}</AlertDescription>
-//             </Alert>
-//           )}
-
-//           {step === "mobile" && (
-//             <div>
-//               <div>
-//                 <Label>New User? Verify with DigiLocker</Label>
-//                 <div className="flex items-center space-x-2 mt-2">
-//                   <input
-//                     type="checkbox"
-//                     checked={isExistingUser}
-//                     onChange={() => setIsExistingUser(!isExistingUser)}
-//                     className="rounded border-gray-300 text-primary focus:ring-primary"
-//                   />
-//                   <span>Existing User</span>
-//                 </div>
-//               </div>
-
-//               <div className="space-y-4 mt-4">
-//                 <div>
-//                   <Label>Mobile Number</Label>
-//                   <Input
-//                     type="tel"
-//                     value={mobileNumber}
-//                     onChange={(e) => setMobileNumber(e.target.value)}
-//                     placeholder="Enter 10 digit mobile number"
-//                     disabled={isSubmitting}
-//                   />
-//                 </div>
-//               </div>
-
-//               <Button
-//                 onClick={handleMobileSubmit}
-//                 disabled={isSubmitting}
-//                 className="w-full"
-//               >
-//                 {isSubmitting ? (
-//                   <>
-//                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-//                     Submit
-//                   </>
-//                 ) : (
-//                   "Submit"
-//                 )}
-//               </Button>
-//             </div>
-//           )}
-
-//           {step === "digilocker" && (
-//             <div className="space-y-4">
-//               <Button
-//                 className="w-full"
-//                 onClick={() => {
-//                   // In real implementation, this would redirect to DigiLocker
-//                   alert("Please verify your DigiLocker credentials");
-//                   setStep("otp");
-//                 }}
-//               >
-//                 Verify with DigiLocker
-//               </Button>
-//               <div className="text-sm text-gray-500 text-center">
-//                 After verification, enter your mobile number below
-//               </div>
-//             </div>
-//           )}
-
-//           {step === "otp" && (
-//             <div className="space-y-4">
-//               <div>
-//                 <Label>OTP</Label>
-//                 <Input
-//                   type="text"
-//                   value={otp}
-//                   onChange={(e) => setOtp(e.target.value)}
-//                   placeholder="Enter OTP"
-//                   disabled={isSubmitting}
-//                 />
-//               </div>
-
-//               <Button
-//                 onClick={handleLogin}
-//                 disabled={isSubmitting}
-//                 className="w-full"
-//               >
-//                 {isSubmitting ? (
-//                   <>
-//                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-//                     Verify
-//                   </>
-//                 ) : (
-//                   "Verify"
-//                 )}
-//               </Button>
-//             </div>
-//           )}
-
-//           <Button variant="outline" onClick={onBack} className="w-full">
-//             Back to Home
-//           </Button>
-//         </CardContent>
-//       </Card>
-
-//       <DocuChatWidget />
-//     </div>
-//   );
-// };
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -233,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { DocuChatWidget } from "../DocChatWidget";
+import { OTPInput } from "./otpinput";
 
 interface LoginFlowProps {
   userType: "citizen" | "officer";
@@ -255,11 +28,9 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
 
   const handleStart = (type: "digilocker" | "signup") => {
     setFlowType(type);
-
     if (type === "digilocker") {
       alert("✅ DigiLocker verified successfully.");
     }
-
     setStep("mobile");
   };
 
@@ -284,12 +55,13 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
     try {
       await new Promise((res) => setTimeout(res, 1000)); // Simulate API
 
-      if (otp === "123456") {
-        if (userType === "citizen") {
-          navigate("/citizen-dashboard");
-        } else {
-          navigate("/officer-dashboard");
-        }
+      if (
+        (userType === "citizen" && otp === "211213") ||
+        (userType === "officer" && otp === "121212")
+      ) {
+        navigate(
+          userType === "citizen" ? "/citizen-dashboard" : "/officer-dashboard"
+        );
         onLogin();
       } else {
         setError("Invalid OTP. Try again.");
@@ -303,34 +75,45 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100" />
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-white to-blue-100" />
 
-      <Card className="w-full max-w-md relative z-10">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
+      <Card className="w-full max-w-md relative z-10 rounded-2xl shadow-xl bg-white/80 backdrop-blur-md border border-gray-200 transition-all duration-300 hover:shadow-2xl">
+        <CardHeader className="pt-6 pb-3 text-center">
+          <CardTitle className="text-3xl font-semibold text-gray-800">
             {userType === "citizen" ? "Citizen Login" : "Officer Login"}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-6 pb-8">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
+          {/* Welcome Step */}
           {step === "welcome" && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <img
+                  src="/public/assests/DigilockerLogo.svg"
+                  alt="DigiLocker"
+                  className="w-32 h-auto mb-2"
+                />
+              </div>
+
               <Button
-                className="w-full"
+                className="w-full transition-transform duration-200 hover:scale-[1.02] hover:shadow-md"
                 onClick={() => handleStart("digilocker")}
               >
                 Sign in with DigiLocker
               </Button>
+
               <div className="text-center text-sm text-gray-500">or</div>
+
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full transition-transform duration-200 hover:scale-[1.02]"
                 onClick={() => handleStart("signup")}
               >
                 Sign Up
@@ -338,15 +121,17 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
             </div>
           )}
 
+          {/* Mobile Number Step */}
           {step === "mobile" && (
             <div className="space-y-4">
               <div>
-                <Label>Mobile Number</Label>
+                <Label htmlFor="mobile">Mobile Number</Label>
                 <Input
+                  id="mobile"
                   type="tel"
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
-                  placeholder="Enter 10 digit mobile number"
+                  placeholder="Enter 10-digit mobile number"
                   disabled={isSubmitting}
                 />
               </div>
@@ -367,17 +152,12 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
             </div>
           )}
 
+          {/* OTP Step */}
           {step === "otp" && (
             <div className="space-y-4">
               <div>
-                <Label>OTP</Label>
-                <Input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter OTP"
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="otp">OTP</Label>
+                <OTPInput otp={otp} setOtp={setOtp} disabled={isSubmitting} />
               </div>
               <Button
                 onClick={handleOTPSubmit}
@@ -396,13 +176,16 @@ export const LoginFlow = ({ userType, onLogin, onBack }: LoginFlowProps) => {
             </div>
           )}
 
-          <Button variant="outline" onClick={onBack} className="w-full">
+          {/* Back Button */}
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="w-full mt-2 transition-transform hover:scale-105"
+          >
             Back to Home
           </Button>
         </CardContent>
       </Card>
-
-      <DocuChatWidget />
     </div>
   );
 };

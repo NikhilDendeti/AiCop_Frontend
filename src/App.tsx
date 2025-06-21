@@ -1,9 +1,11 @@
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
   Route,
   useNavigate,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,12 +14,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { DocuChatWidget } from "./components/DocChatWidget";
+import DocuChatPage from "./components/DocChatWidget";
 import { CitizenDashboard } from "./components/CitizenDashboard";
 import { OfficerDashboard } from "./components/OfficerDashboard";
 import CitizenInterface from "./components/CitizenInterface";
 import OfficerInterface from "./components/OfficerInterface";
 import { LoginFlow } from "./components/auth/LoginFlow";
+import ComplaintPreview from "./components/complaintpreview";
+import VoiceComplaintForm from "./components/VoiceComplaintForm"; // <- Ensure this is imported if routing directly
 
 const queryClient = new QueryClient();
 
@@ -46,6 +50,11 @@ const LoginRedirectWrapper = () => {
   );
 };
 
+const ComplaintPreviewWrapper = () => {
+  const { complaintId } = useParams();
+  return <ComplaintPreview complaintId={complaintId || ""} />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -67,10 +76,18 @@ const App = () => (
               <OfficerInterface onBack={() => console.log("Back clicked")} />
             }
           />
+          <Route
+            path="/complaint/:complaintId"
+            element={<ComplaintPreviewWrapper />}
+          />
+          <Route
+            path="/file-complaint"
+            element={<VoiceComplaintForm onBack={() => {}} />}
+          />
           {/* Fallback route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <DocuChatWidget />
+        <DocuChatPage />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

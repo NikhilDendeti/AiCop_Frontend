@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,18 +8,51 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Mic, MicOff, FileText, Send, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ComplaintPreview from "./complaintpreview";
 
 interface VoiceComplaintFormProps {
   onBack: () => void;
 }
 
 const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [caseType, setCaseType] = useState("Theft");
+  const [complaint, setComplaint] = useState<any>(null);
+
+  interface Response {
+    text?: string;
+    videoBlob?: Blob;
+    toString(): string;
+  }
+
+  // Implement toString for Response interface
+  class ResponseImpl implements Response {
+    text?: string;
+    videoBlob?: Blob;
+
+    constructor(text?: string, videoBlob?: Blob) {
+      this.text = text;
+      this.videoBlob = videoBlob;
+    }
+
+    toString(): string {
+      return this.text || "";
+    }
+  }
+
+  const [responses, setResponses] = useState<Record<string, Response>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [videoURL, setVideoURL] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const questions = [
     {
@@ -70,31 +105,70 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
     }
   };
 
-  const handleVoiceToggle = () => {
+  const handleRecordingToggle = async () => {
     if (isRecording) {
       setIsRecording(false);
-      // Simulate voice to text
-      setTimeout(() => {
-        const mockResponse =
-          currentStep === 1
-            ? "My mobile phone was stolen from my bag while I was traveling on the bus."
-            : `Response for question ${currentStep}`;
-        setResponses((prev) => ({
-          ...prev,
-          [currentQuestion.id]: mockResponse,
-        }));
-        toast({
-          title: "Voice recorded",
-          description: "Your response has been transcribed successfully.",
-        });
-      }, 1000);
+      mediaRecorder?.stop();
+      toast({ title: "Recording stopped" });
     } else {
-      setIsRecording(true);
-      toast({
-        title: "Recording started",
-        description: "Speak clearly in your preferred language.",
-      });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+
+        const recorder = new MediaRecorder(stream);
+        setMediaRecorder(recorder);
+        setRecordedChunks([]);
+
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            setRecordedChunks((prev) => [...prev, event.data]);
+          }
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+          setVideoURL(url);
+
+          handleVideoResponse(currentQuestion.id, blob);
+          toast({
+            title: "Recording complete",
+            description: "Your response video has been saved.",
+          });
+        };
+
+        recorder.start();
+        setIsRecording(true);
+
+        toast({
+          title: "Recording started",
+          description: "Recording video and audio now...",
+        });
+      } catch (err) {
+        toast({ title: "Recording failed", description: String(err) });
+      }
     }
+  };
+
+  const handleVideoResponse = (questionId: string, videoBlob: Blob) => {
+    setResponses((prev) => ({
+      ...prev,
+      [questionId]: new ResponseImpl(prev[questionId]?.toString(), videoBlob),
+    }));
+  };
+
+  const handleTextResponse = (questionId: string, response: string) => {
+    setResponses((prev) => ({
+      ...prev,
+      [questionId]: new ResponseImpl(response.trim()),
+    }));
   };
 
   const handleNext = () => {
@@ -105,18 +179,222 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
     }
   };
 
-  const generateComplaint = () => {
+  const generateComplaint = async () => {
     setIsGenerating(true);
-    // Simulate AI complaint generation
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsGenerating(false);
       toast({
         title: "Complaint Generated",
         description:
           "Your legal complaint has been drafted with relevant IPC sections.",
       });
-      setCurrentStep(questions.length + 1);
+
+      // const complaintId = await handleSubmitComplaint(); // ✅ Capture the returned ID
+      const complaintId = "76b5a21d-d5ff-4a78-983d-eba57f065046";
+      if (complaintId) {
+        navigate(`/complaint/${complaintId}`); // ✅ Navigate dynamically
+      }
     }, 3000);
+  };
+
+  // const handleSubmitComplaint = async () => {
+  //   try {
+  //     const videoEntries = Object.entries(responses).filter(
+  //       ([_, resp]) => resp?.videoBlob
+  //     );
+
+  //     const evidenceArray = await Promise.all(
+  //       videoEntries.map(async ([key, resp]) => {
+  //         const base64 = await blobToBase64(resp.videoBlob!);
+  //         return {
+  //           file_url: base64,
+  //           type: "video",
+  //           filename: `${key}.webm`,
+  //           text_transcript: resp.toString(), // transcript for this video
+  //         };
+  //       })
+  //     );
+
+  //     // Full transcript log for all questions
+  //     const transcriptLog = Object.entries(responses).map(([key, resp]) => ({
+  //       question_id: key,
+  //       response_text: resp?.toString() || "",
+  //     }));
+
+  //     const payload = {
+  //       incident_summary: responses.incident?.toString() || "",
+  //       case_type: caseType,
+  //       incident_date: "2025-06-15",
+  //       incident_time: "15:45",
+  //       location: responses.when_where?.toString() || "",
+  //       accused: [
+  //         {
+  //           name: "Unknown",
+  //           description: responses.involved?.toString() || "",
+  //           contact_info: "N/A",
+  //           statement: responses.involved?.toString() || "",
+  //         },
+  //       ],
+  //       witnesses: [
+  //         {
+  //           name: "Witness",
+  //           contact_info: "N/A",
+  //           statement: responses.witnesses?.toString() || "",
+  //         },
+  //       ],
+  //       evidence: evidenceArray,
+  //       transcripts: transcriptLog, // ⬅️ full list of question/response pairs
+  //     };
+
+  //     const finalRes = await fetch(
+  //       "http://192.168.1.15:8000/create_complaint/v1",
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify(payload),
+  //       }
+  //     );
+
+  //     const finalJson = await finalRes.json();
+
+  //     if (!finalRes.ok)
+  //       throw new Error(finalJson.message || "Complaint submission failed");
+
+  //     toast({
+  //       title: "Complaint Submitted",
+  //       description: `Complaint ID: ${finalJson.complaint_id}`,
+  //     });
+
+  //     return finalJson.complaint_id;
+  //   } catch (err: any) {
+  //     toast({
+  //       title: "Error",
+  //       description: err.message,
+  //     });
+  //     return null;
+  //   }
+  // };
+
+  // Helper function to convert Blob to Base64
+
+  const handleSubmitComplaint = async () => {
+    try {
+      const videoEntries = Object.entries(responses).filter(
+        ([_, resp]) => resp?.videoBlob
+      );
+
+      const evidenceArray = await Promise.all(
+        videoEntries.map(async ([key, resp]) => {
+          const base64 = await blobToBase64(resp.videoBlob!);
+          return {
+            file_url: base64,
+            type: "video",
+          };
+        })
+      );
+
+      const incidentLocationBlob = responses.when_where?.videoBlob;
+      const incidentTypeBlob = responses.incident?.videoBlob;
+
+      const incident_location_video_url = incidentLocationBlob
+        ? await blobToBase64(incidentLocationBlob)
+        : "";
+
+      const incident_type_video_url = incidentTypeBlob
+        ? await blobToBase64(incidentTypeBlob)
+        : "";
+
+      const payload = {
+        incident_summary: responses.incident?.toString() || "",
+        case_type: caseType,
+        location: responses.when_where?.toString() || "",
+        incident_date: "2025-06-15",
+        incident_time: "15:45",
+        is_cognizable: true,
+        incident_location_video_url,
+        incident_type_video_url,
+        accused: [
+          {
+            name: "Unknown",
+            description: responses.involved?.toString() || "",
+            contact_info: "Unknown",
+            statement: responses.involved?.toString() || "",
+          },
+        ],
+        witnesses: [
+          {
+            name: "Witness",
+            contact_info: "N/A",
+            statement: responses.witnesses?.toString() || "",
+          },
+        ],
+        evidence: evidenceArray,
+      };
+
+      console.log("Payload:", JSON.stringify(payload)); // 👈 Debug log
+
+      const finalRes = await fetch(
+        "http://192.168.1.15:8000/create_complaint/v1",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const finalJson = await finalRes.json();
+
+      if (!finalRes.ok)
+        throw new Error(finalJson.message || "Complaint submission failed");
+
+      toast({
+        title: "Complaint Submitted",
+        description: `Complaint ID: ${finalJson.complaint_id}`,
+      });
+
+      return finalJson.complaint_id;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+      });
+      return null;
+    }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleSpeak = () => {
+    const utterance = new SpeechSynthesisUtterance(getQuestionText());
+
+    // Get available voices
+    const voices = speechSynthesis.getVoices();
+
+    // Choose voice based on language preference
+    const selectedVoice =
+      selectedLanguage === "hi"
+        ? voices.find((v) => v.lang === "hi-IN") ||
+          voices.find((v) => v.name.includes("Google हिन्दी"))
+        : selectedLanguage === "te"
+        ? voices.find((v) => v.lang === "en-US" && v.name.includes("Female")) // Best for Roman Telugu
+        : voices.find((v) => v.lang === "en-US");
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+
+    // Tone adjustments
+    utterance.pitch = 1.2; // Slightly higher
+    utterance.rate = 0.9; // Calm pace
+
+    speechSynthesis.speak(utterance);
   };
 
   if (currentStep > questions.length) {
@@ -141,7 +419,9 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           </div>
         </header>
 
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <ComplaintPreview complaintId={complaint} />
+
+        {/* <div className="container mx-auto px-4 py-8 max-w-4xl">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -230,7 +510,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
       </div>
     );
   }
@@ -296,6 +576,22 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           <Progress value={progress} className="h-2" />
         </div>
 
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Select Case Type
+          </label>
+          <select
+            value={caseType}
+            onChange={(e) => setCaseType(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Murder">Murder</option>
+            <option value="Theft">Theft</option>
+            <option value="Crime Against Women">Crime Against Women</option>
+            <option value="Public Nuisance">Public Nuisance</option>
+          </select>
+        </div>
+
         {isGenerating ? (
           <Card>
             <CardContent className="p-12 text-center">
@@ -314,7 +610,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 Question {currentStep}
-                <Volume2 className="h-5 w-5 ml-2 text-blue-600" />
+                <Volume2
+                  onClick={handleSpeak}
+                  className="h-5 w-5 ml-2 text-blue-600"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -325,27 +624,37 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                 </p>
               </div>
 
-              {/* Voice Recording */}
+              {/* Video Recording */}
               <div className="text-center">
+                <video
+                  ref={videoRef}
+                  className="mx-auto rounded-lg border border-gray-300 shadow-sm"
+                  width={600}
+                  height={400}
+                  autoPlay
+                  muted
+                />
+
                 <Button
-                  size="lg"
-                  onClick={handleVoiceToggle}
-                  className={`w-32 h-32 rounded-full ${
+                  size="sm"
+                  onClick={handleRecordingToggle}
+                  className={`mt-4 w-20 h-20 rounded-full ${
                     isRecording
                       ? "bg-red-600 hover:bg-red-700 animate-pulse"
                       : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
                   {isRecording ? (
-                    <MicOff className="h-12 w-12" />
+                    <MicOff className="h-8 w-8" />
                   ) : (
-                    <Mic className="h-12 w-12" />
+                    <Mic className="h-8 w-8" />
                   )}
                 </Button>
-                <p className="mt-4 text-sm text-gray-600">
+
+                <p className="mt-2 text-sm text-gray-600">
                   {isRecording
-                    ? "Recording... Tap to stop"
-                    : "Tap to start recording"}
+                    ? "Recording..."
+                    : "Tap to record your video answer"}
                 </p>
               </div>
 
@@ -356,12 +665,9 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                 </label>
                 <Textarea
                   placeholder="Type your response here..."
-                  value={responses[currentQuestion.id] || ""}
+                  value={responses[currentQuestion.id]?.toString() || ""}
                   onChange={(e) =>
-                    setResponses((prev) => ({
-                      ...prev,
-                      [currentQuestion.id]: e.target.value,
-                    }))
+                    handleTextResponse(currentQuestion.id, e.target.value)
                   }
                   rows={4}
                 />
@@ -376,14 +682,23 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                 >
                   Previous
                 </Button>
-                <Button
-                  onClick={handleNext}
-                  disabled={!responses[currentQuestion.id]?.trim()}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "1rem" }}
                 >
-                  {currentStep === questions.length
-                    ? "Generate Complaint"
-                    : "Next"}
-                </Button>
+                  <Button
+                    onClick={handleNext}
+                    disabled={
+                      !(
+                        responses[currentQuestion.id]?.toString().trim() ||
+                        responses[currentQuestion.id]?.videoBlob
+                      )
+                    }
+                  >
+                    {currentStep === questions.length
+                      ? "Generate Complaint"
+                      : "Next"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -394,3 +709,6 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 };
 
 export default VoiceComplaintForm;
+function setLoading(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
