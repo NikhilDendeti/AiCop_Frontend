@@ -585,10 +585,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
             onChange={(e) => setCaseType(e.target.value)}
             className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="Murder">Murder</option>
-            <option value="Theft">Theft</option>
-            <option value="Crime Against Women">Crime Against Women</option>
-            <option value="Public Nuisance">Public Nuisance</option>
+            <option value="murder">Murder</option>
+            <option value="theft">Theft</option>
+            <option value="crime_against_women">Crime Against Women</option>
+            <option value="public_nuisance">Public Nuisance</option>
           </select>
         </div>
 

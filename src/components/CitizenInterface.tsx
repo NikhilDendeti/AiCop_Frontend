@@ -45,7 +45,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
     const fetchUserComplaints = async () => {
       try {
         const res = await fetch(
-          "http://192.168.1.15:8000/user/complaints/2d4b7fb4-08a8-40a0-8cf7-8c92a2be1078/"
+          "api/user/complaints/2d4b7fb4-08a8-40a0-8cf7-8c92a2be1078/"
         );
         const data = await res.json();
         console.log(data, "complaints data");
