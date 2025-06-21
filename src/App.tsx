@@ -22,6 +22,8 @@ import OfficerInterface from "./components/OfficerInterface";
 import { LoginFlow } from "./components/auth/LoginFlow";
 import ComplaintPreview from "./components/complaintpreview";
 import VoiceComplaintForm from "./components/VoiceComplaintForm"; // <- Ensure this is imported if routing directly
+import PoliceDocuChatWidget from "./components/PoliiceDocChatWidget";
+import OfficerVoiceAssistant from "./components/officevoiceassistant";
 
 const queryClient = new QueryClient();
 
@@ -67,13 +69,19 @@ const App = () => (
           <Route
             path="/citizen-dashboard"
             element={
-              <CitizenInterface onBack={() => console.log("Back clicked")} />
+              <>
+                <CitizenInterface onBack={() => console.log("Back clicked")} />
+                <DocuChatPage />
+              </>
             }
           />
           <Route
             path="/officer-dashboard"
             element={
-              <OfficerInterface onBack={() => console.log("Back clicked")} />
+              <>
+                <OfficerInterface onBack={() => console.log("Back clicked")} />
+                <PoliceDocuChatWidget />
+              </>
             }
           />
           <Route
@@ -84,10 +92,19 @@ const App = () => (
             path="/file-complaint"
             element={<VoiceComplaintForm onBack={() => {}} />}
           />
+          <Route
+            path="/officer-voice"
+            element={
+              <OfficerVoiceAssistant
+                onBack={function (): void {
+                  throw new Error("Function not implemented.");
+                }}
+              />
+            }
+          />
           {/* Fallback route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <DocuChatPage />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

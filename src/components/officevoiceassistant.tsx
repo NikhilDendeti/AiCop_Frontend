@@ -19,7 +19,7 @@ import {
   Headphones,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import generateLegalResponse from "../Ai-VoiceAssistant/generateresponse";
+import generateLegalResponse from "@/Ai-VoiceAssistant/generatepoliceresponse";
 import { speakText, stopSpeaking } from "@/Ai-VoiceAssistant/speaktext";
 import { transcribeVoice } from "@/Ai-VoiceAssistant/transcribevoice";
 
@@ -66,34 +66,6 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
     },
   ];
 
-  const helpTopics = [
-    {
-      title: "How to file a complaint",
-      content:
-        'Say "I want to file a complaint" and I will guide you through the process step by step.',
-      audio: true,
-    },
-    {
-      title: "Check complaint status",
-      content:
-        'You can ask "What is the status of my complaint" followed by your FIR number.',
-      audio: true,
-    },
-    {
-      title: "Language support",
-      content:
-        "I can understand and respond in English, Hindi, and Telugu. Just speak naturally.",
-      audio: true,
-    },
-    {
-      title: "Voice quality tips",
-      content:
-        "Speak clearly, avoid background noise, and hold the microphone button while speaking.",
-      audio: true,
-    },
-  ];
-
-  // Simulate audio level animation
   useEffect(() => {
     if (isListening) {
       const interval = setInterval(() => {
@@ -113,8 +85,58 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
     });
   };
 
+  //   const handleVoiceRecord = async () => {
+  //     try {
+  //       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  //       const recorder = new MediaRecorder(stream);
+  //       const chunks: Blob[] = [];
+
+  //       recorder.ondataavailable = (e) => chunks.push(e.data);
+
+  //       recorder.onstop = async () => {
+  //         const blob = new Blob(chunks, { type: "audio/webm" });
+
+  //         if (blob.size < 1000) {
+  //           toast({
+  //             title: "Recording too short",
+  //             description: "Please try again.",
+  //           });
+  //           return;
+  //         }
+
+  //         const { text, language } = await transcribeVoice(blob);
+  //         const langCode = selectedLanguage as "en" | "hi" | "te";
+  //         setSelectedLanguage(langCode);
+  //         setTranscript(text);
+
+  //         const legalReply = await generateLegalResponse(text, langCode);
+  //         setAiResponse(legalReply);
+  //         speakText(legalReply, langCode);
+  //       };
+
+  //       recorder.start();
+  //       toast({
+  //         title: "Recording...",
+  //         description: "Speak now, recording for 5 seconds.",
+  //       });
+
+  //       setTimeout(() => {
+  //         recorder.stop();
+  //       }, 5000);
+  //     } catch (err) {
+  //       console.error("Recording failed:", err);
+  //       toast({
+  //         title: "Error",
+  //         description: "Could not start microphone.",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   };
+
   const handleVoiceRecord = async () => {
     try {
+      // 🛑 Stop any ongoing speech before recording
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       const chunks: Blob[] = [];
@@ -133,15 +155,13 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
         }
 
         const { text, language } = await transcribeVoice(blob);
-        // const langCode = "en";
-
-        // const langCode = "en";
         const langCode = selectedLanguage as "en" | "hi" | "te";
         setSelectedLanguage(langCode);
         setTranscript(text);
 
         const legalReply = await generateLegalResponse(text, langCode);
         setAiResponse(legalReply);
+
         speakText(legalReply, langCode);
       };
 
@@ -153,7 +173,7 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
 
       setTimeout(() => {
         recorder.stop();
-      }, 5000); // Record for 5 seconds
+      }, 5000);
     } catch (err) {
       console.error("Recording failed:", err);
       toast({
@@ -170,8 +190,6 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
       title: "Playing Response",
       description: "AI is speaking your response",
     });
-
-    // Simulate speech duration
     setTimeout(() => {
       setIsSpeaking(false);
     }, 4000);
@@ -191,7 +209,7 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
+      {/* ...UI content remains the same as your working code above... */}
       <header className="backdrop-blur-sm bg-white/80 border-b border-white/20 shadow-lg">
         <div className="container mx-auto px-4 py-4 md:py-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -222,9 +240,9 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-4xl space-y-8">
         {/* Language Selection */}
-        <Card className="mb-6 md:mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center text-lg md:text-xl">
               <Languages className="h-5 w-5 md:h-6 md:w-6 mr-2 text-blue-600" />
@@ -258,19 +276,19 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
           </CardContent>
         </Card>
 
-        {/* Voice Interaction Area */}
-        <Card className="mb-6 md:mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+        {/* Voice Interaction */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center text-lg md:text-xl">
               <Mic className="h-5 w-5 md:h-6 md:w-6 mr-2 text-green-600" />
               Voice Interaction
             </CardTitle>
-            <p className="text-sm md:text-base text-gray-600">
+            <p className="text-sm text-gray-600">
               Speaking in: <strong>{getCurrentLanguage().nativeName}</strong>
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Voice Control */}
+            {/* Record Button */}
             <div className="text-center">
               <div className="relative inline-block">
                 <Button
@@ -286,30 +304,28 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
                   }`}
                 >
                   {isListening ? (
-                    <MicOff className="h-8 w-8 md:h-12 md:w-12" />
+                    <MicOff className="h-10 w-10" />
                   ) : (
-                    <Mic className="h-8 w-8 md:h-12 md:w-12" />
+                    <Mic className="h-10 w-10" />
                   )}
                 </Button>
 
-                {/* Audio Level Indicator */}
                 {isListening && (
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-20 md:w-24">
+                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24">
                     <Progress value={audioLevel} className="h-1 md:h-2" />
                   </div>
                 )}
               </div>
-
-              <p className="mt-4 md:mt-6 text-sm md:text-base font-medium">
+              <p className="mt-4 font-medium text-sm">
                 {isListening
                   ? "Listening... Tap to stop"
                   : "Tap to start speaking"}
               </p>
 
               {isSpeaking && (
-                <div className="mt-2 flex items-center justify-center space-x-2">
-                  <Volume2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600 animate-pulse" />
-                  <span className="text-sm md:text-base text-blue-600 font-medium">
+                <div className="mt-2 flex justify-center items-center space-x-2">
+                  <Volume2 className="h-4 w-4 animate-pulse text-blue-600" />
+                  <span className="text-blue-600 font-medium text-sm">
                     AI is speaking...
                   </span>
                 </div>
@@ -322,12 +338,10 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-1" />
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 text-sm md:text-base">
+                    <h4 className="font-semibold text-sm text-gray-800 mb-1">
                       What you said:
                     </h4>
-                    <p className="text-gray-700 text-sm md:text-base leading-relaxed">
-                      {transcript}
-                    </p>
+                    <p className="text-sm text-gray-700">{transcript}</p>
                   </div>
                 </div>
               </div>
@@ -339,16 +353,16 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
                 <div className="flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 mt-1" />
                   <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900 text-sm md:text-base">
-                        AI Assistant:
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="font-semibold text-sm text-gray-800">
+                        AI Response
                       </h4>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handlePlayResponse}
                         disabled={isSpeaking}
-                        className="text-xs md:text-sm"
+                        className="text-xs"
                       >
                         {isSpeaking ? (
                           <>
@@ -361,27 +375,25 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
                         )}
                       </Button>
                     </div>
-                    <p className="text-gray-700 text-sm md:text-base leading-relaxed">
-                      {aiResponse}
-                    </p>
+                    <p className="text-sm text-gray-700">{aiResponse}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Control Buttons */}
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={handleReset}
-                className="flex-1 text-sm md:text-base"
+                className="w-full sm:w-auto"
                 disabled={isListening || isSpeaking}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset Conversation
+                Reset
               </Button>
               <Button
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm md:text-base"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white"
                 disabled={!aiResponse || isListening || isSpeaking}
               >
                 Continue with Voice Assistant
@@ -390,32 +402,7 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
           </CardContent>
         </Card>
 
-        {/* Voice Commands Help */}
-        <Card className="mb-6 md:mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg md:text-xl">
-              <HelpCircle className="h-5 w-5 md:h-6 md:w-6 mr-2 text-orange-600" />
-              Voice Commands
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {voiceCommands.map((cmd, index) => (
-                <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-2 text-sm md:text-base">
-                    {cmd.command}
-                  </h4>
-                  <p className="text-gray-600 mb-2 text-xs md:text-sm">
-                    {cmd.description}
-                  </p>
-                  <p className="text-gray-500 italic text-xs md:text-sm">
-                    Example: "{cmd.example}"
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Help Section */}
       </div>
     </div>
   );

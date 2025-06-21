@@ -190,92 +190,12 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
       });
 
       // const complaintId = await handleSubmitComplaint(); // ✅ Capture the returned ID
-      const complaintId = "76b5a21d-d5ff-4a78-983d-eba57f065046";
+      const complaintId = "c46c7259-4616-447a-9aeb-42997d9787b1";
       if (complaintId) {
         navigate(`/complaint/${complaintId}`); // ✅ Navigate dynamically
       }
     }, 3000);
   };
-
-  // const handleSubmitComplaint = async () => {
-  //   try {
-  //     const videoEntries = Object.entries(responses).filter(
-  //       ([_, resp]) => resp?.videoBlob
-  //     );
-
-  //     const evidenceArray = await Promise.all(
-  //       videoEntries.map(async ([key, resp]) => {
-  //         const base64 = await blobToBase64(resp.videoBlob!);
-  //         return {
-  //           file_url: base64,
-  //           type: "video",
-  //           filename: `${key}.webm`,
-  //           text_transcript: resp.toString(), // transcript for this video
-  //         };
-  //       })
-  //     );
-
-  //     // Full transcript log for all questions
-  //     const transcriptLog = Object.entries(responses).map(([key, resp]) => ({
-  //       question_id: key,
-  //       response_text: resp?.toString() || "",
-  //     }));
-
-  //     const payload = {
-  //       incident_summary: responses.incident?.toString() || "",
-  //       case_type: caseType,
-  //       incident_date: "2025-06-15",
-  //       incident_time: "15:45",
-  //       location: responses.when_where?.toString() || "",
-  //       accused: [
-  //         {
-  //           name: "Unknown",
-  //           description: responses.involved?.toString() || "",
-  //           contact_info: "N/A",
-  //           statement: responses.involved?.toString() || "",
-  //         },
-  //       ],
-  //       witnesses: [
-  //         {
-  //           name: "Witness",
-  //           contact_info: "N/A",
-  //           statement: responses.witnesses?.toString() || "",
-  //         },
-  //       ],
-  //       evidence: evidenceArray,
-  //       transcripts: transcriptLog, // ⬅️ full list of question/response pairs
-  //     };
-
-  //     const finalRes = await fetch(
-  //       "http://192.168.1.15:8000/create_complaint/v1",
-  //       {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify(payload),
-  //       }
-  //     );
-
-  //     const finalJson = await finalRes.json();
-
-  //     if (!finalRes.ok)
-  //       throw new Error(finalJson.message || "Complaint submission failed");
-
-  //     toast({
-  //       title: "Complaint Submitted",
-  //       description: `Complaint ID: ${finalJson.complaint_id}`,
-  //     });
-
-  //     return finalJson.complaint_id;
-  //   } catch (err: any) {
-  //     toast({
-  //       title: "Error",
-  //       description: err.message,
-  //     });
-  //     return null;
-  //   }
-  // };
-
-  // Helper function to convert Blob to Base64
 
   const handleSubmitComplaint = async () => {
     try {

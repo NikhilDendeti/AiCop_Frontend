@@ -58,3 +58,16 @@ export const speakText = async (text: string, lang: "en" | "hi" | "te") => {
     alert("Failed to play response. Check console for details.");
   }
 };
+
+declare global {
+  interface Window {
+    currentAudio?: HTMLAudioElement;
+  }
+}
+
+export const stopSpeaking = () => {
+  if (window.currentAudio && typeof window.currentAudio.pause === "function") {
+    window.currentAudio.pause();
+    window.currentAudio = null;
+  }
+};
