@@ -21,6 +21,7 @@ import ComplaintDetails from "./ComplaintDetails";
 import LegalResources from "./LegalResources";
 import VoiceAssistance from "./VoiceAssistance";
 import { useLocation, useNavigate } from "react-router-dom";
+import { apiURL } from "@/utils/apiUtil";
 
 interface CitizenInterfaceProps {
   onBack: () => void;
@@ -50,15 +51,15 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
     "c46c7259-4616-447a-9aeb-42997d9787b1": 75, // Crime Against Women
   };
 
-  
-
   useEffect(() => {
+    console.log("useEffect called");
     const fetchUserComplaints = async () => {
       try {
         const res = await fetch(
-          "api/user/complaints/2d4b7fb4-08a8-40a0-8cf7-8c92a2be1078/"
+          `${apiURL}/user/complaints/2d4b7fb4-08a8-40a0-8cf7-8c92a2be1078/`
         );
         const data = await res.json();
+        console.log(data, "complaints data");
         setComplaints(data);
 
         // Animate progress for each complaint
@@ -84,100 +85,6 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
 
     fetchUserComplaints();
   }, [location.state?.submitted]);
-
-  // Comprehensive mock complaint data
-  // const mockComplaints = [
-  //   {
-  //     id: "FIR001",
-  //     title: "Mobile Phone Theft",
-  //     date: "2024-01-15",
-  //     status: "Under Investigation",
-  //     officer: "Inspector Rajesh Kumar",
-  //     progress: 65,
-  //     location: "Bus Stand, Hyderabad",
-  //     description:
-  //       "My Samsung Galaxy S23 was stolen from my bag while traveling on bus from Secunderabad to Kukatpally around 3 PM.",
-  //     evidence: [
-  //       "CCTV footage requested",
-  //       "Bus ticket submitted",
-  //       "Phone IMEI registered",
-  //     ],
-  //     updates: [
-  //       {
-  //         date: "2024-01-16",
-  //         message: "FIR registered successfully",
-  //         officer: "Constable Priya Sharma",
-  //       },
-  //       {
-  //         date: "2024-01-18",
-  //         message: "CCTV footage reviewed, suspect identified",
-  //         officer: "Inspector Rajesh Kumar",
-  //       },
-  //       {
-  //         date: "2024-01-20",
-  //         message: "Investigation ongoing, checking nearby areas",
-  //         officer: "Inspector Rajesh Kumar",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     id: "FIR002",
-  //     title: "Noise Pollution Complaint",
-  //     date: "2024-01-10",
-  //     status: "Resolved",
-  //     officer: "Sub-Inspector Priya Sharma",
-  //     progress: 100,
-  //     location: "Banjara Hills, Hyderabad",
-  //     description:
-  //       "Loud music and noise from neighboring construction site disturbing residents daily from 6 AM to 10 PM.",
-  //     evidence: [
-  //       "Sound level measurements",
-  //       "Video recordings",
-  //       "Neighbor testimonies",
-  //     ],
-  //     updates: [
-  //       {
-  //         date: "2024-01-11",
-  //         message: "Complaint registered and site visited",
-  //         officer: "Sub-Inspector Priya Sharma",
-  //       },
-  //       {
-  //         date: "2024-01-12",
-  //         message: "Notice issued to construction company",
-  //         officer: "Sub-Inspector Priya Sharma",
-  //       },
-  //       {
-  //         date: "2024-01-14",
-  //         message: "Sound levels reduced, compliance achieved",
-  //         officer: "Sub-Inspector Priya Sharma",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     id: "FIR003",
-  //     title: "Domestic Violence Report",
-  //     date: "2024-01-08",
-  //     status: "Under Investigation",
-  //     officer: "Inspector Meera Reddy",
-  //     progress: 45,
-  //     location: "Jubilee Hills, Hyderabad",
-  //     description:
-  //       "Physical assault by spouse with threats and verbal abuse. Medical treatment sought for injuries.",
-  //     evidence: ["Medical reports", "Injury photographs", "Witness statements"],
-  //     updates: [
-  //       {
-  //         date: "2024-01-09",
-  //         message: "Emergency response provided, medical aid arranged",
-  //         officer: "Inspector Meera Reddy",
-  //       },
-  //       {
-  //         date: "2024-01-11",
-  //         message: "Counseling session arranged, legal aid contacted",
-  //         officer: "Inspector Meera Reddy",
-  //       },
-  //     ],
-  //   },
-  // ];
 
   const navigate = useNavigate();
 
@@ -231,7 +138,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
 
   const handleBack = () => {
     navigate(-1);
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">

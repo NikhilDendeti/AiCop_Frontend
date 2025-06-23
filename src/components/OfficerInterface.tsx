@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import OfficerComplaintDetails from "./OfficerComplaintDetails";
 import { useNavigate } from "react-router-dom";
+import { apiURL } from "@/utils/apiUtil";
 
 interface OfficerInterfaceProps {
   onBack: () => void;
@@ -172,9 +173,8 @@ const OfficerInterface = ({ onBack }: OfficerInterfaceProps) => {
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
-        const response = await axios.get(
-          "http://192.168.1.15:8000/si/complaints/"
-        );
+        const response = await axios.get(`${apiURL}/si/complaints/`);
+        console.log(response.data, "complaints data");
         if (response.data.status === "success") {
           const mapped = response.data.complaints.map((c: any) => ({
             id: c.complaint_id,

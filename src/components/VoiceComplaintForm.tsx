@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Mic, MicOff, FileText, Send, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ComplaintPreview from "./complaintpreview";
+import { apiURL } from "@/utils/apiUtil";
 
 interface VoiceComplaintFormProps {
   onBack: () => void;
@@ -189,10 +190,9 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           "Your legal complaint has been drafted with relevant IPC sections.",
       });
 
-      // const complaintId = await handleSubmitComplaint(); // ✅ Capture the returned ID
       const complaintId = "c46c7259-4616-447a-9aeb-42997d9787b1";
       if (complaintId) {
-        navigate(`/complaint/${complaintId}`); // ✅ Navigate dynamically
+        navigate(`/complaint/${complaintId}`);
       }
     }, 3000);
   };
@@ -253,14 +253,11 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
       console.log("Payload:", JSON.stringify(payload)); // 👈 Debug log
 
-      const finalRes = await fetch(
-        "https://2270-49-249-8-90.ngrok-free.app:8000/create_complaint/v1",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const finalRes = await fetch(`${apiURL}/create_complaint/v1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const finalJson = await finalRes.json();
 
