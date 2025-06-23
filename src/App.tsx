@@ -24,6 +24,8 @@ import ComplaintPreview from "./components/complaintpreview";
 import VoiceComplaintForm from "./components/VoiceComplaintForm"; // <- Ensure this is imported if routing directly
 import PoliceDocuChatWidget from "./components/PoliiceDocChatWidget";
 import OfficerVoiceAssistant from "./components/officevoiceassistant";
+import RoleSelector from "./components/selectRole";
+import RolePage from "./components/Rolepage";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +77,7 @@ const App = () => (
               </>
             }
           />
+          <Route path="/select-role" element={<RolePage />} />
           <Route
             path="/officer-dashboard"
             element={

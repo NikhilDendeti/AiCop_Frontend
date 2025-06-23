@@ -74,7 +74,7 @@
 //       }
 
 //       const res = await fetch(
-//         `http://192.168.1.15:8000/user/complaints/${complaint.user.user_id}/`,
+//         `http://:8000/user/complaints/${complaint.user.user_id}/`,
 //         {
 //           method: "POST",
 //           headers: {
