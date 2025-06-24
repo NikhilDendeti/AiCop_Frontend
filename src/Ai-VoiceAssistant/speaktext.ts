@@ -38,7 +38,6 @@ export const speakText = async (text: string, lang: "en" | "hi" | "te") => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ TTS API error:", errorText);
       throw new Error("TTS failed: " + errorText);
     }
 
