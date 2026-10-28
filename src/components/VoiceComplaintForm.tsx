@@ -294,7 +294,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b-2 border-blue-400">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <Button variant="ghost" onClick={onBack} size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -468,10 +468,9 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
               <div className="text-center">
                 <video
                   ref={videoRef}
-                  className="mx-auto rounded-lg border border-gray-300 shadow-sm"
-                  width={600}
-                  height={400}
+                  className="mx-auto rounded-lg border border-gray-300 shadow-sm w-full max-w-[600px] aspect-[3/2] bg-black/5"
                   autoPlay
+                  playsInline
                   muted
                 />
 
