@@ -33,6 +33,14 @@ No secret belongs in a `VITE_*` variable: they are public in the built bundle. A
 - Server data is fetched with React Query. Feedback uses `src/lib/notify.ts` (toasts), never `alert()`.
 - Tests use Vitest + Testing Library; `src/mocks/` holds MSW handlers that follow the contract (including planned endpoints).
 
+## Languages
+
+English, Hindi and Telugu via `react-i18next` (`src/i18n/`). The choice is remembered in the browser and sets `<html lang>`. Citizen screens (home, login, dashboard, filing form) are translated; officer, magistrate and admin screens are English only for now. To add a string, add the key to `locales/en.ts` and to `hi.ts` and `te.ts` (the TypeScript types and a test fail if a key or placeholder is missing). The Hindi and Telugu text is a draft and needs a native speaker's review before launch.
+
+## Accessibility and performance
+
+`src/test/a11y.test.tsx` runs axe on key screens (colour contrast needs a real browser and is not covered). Routes load on demand (`React.lazy`), with React, React Query and i18n in separate vendor chunks.
+
 ## Local demo logins
 
 With the backend in dev mode (`DEV_FIXED_OTP=123456`) and `seed_demo` run, any login code is `123456`. Phones: citizen `9000000001`, head constable `9000000011`, sub-inspector `9000000012`, SHO `9000000013`, magistrate `9000000021`, admin `9000000031`.

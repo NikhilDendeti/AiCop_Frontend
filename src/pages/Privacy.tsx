@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  * replaced by the organisation before launch (policy version in src/api/consents.ts).
  */
 const Privacy = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+  <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Privacy</CardTitle>
@@ -37,7 +37,7 @@ const Privacy = () => (
         </section>
       </CardContent>
     </Card>
-  </div>
+  </main>
 );
 
 export default Privacy;

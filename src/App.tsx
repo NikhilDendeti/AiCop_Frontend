@@ -12,21 +12,29 @@ import { RequireRole } from "@/auth/RequireRole";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AdminHome from "./pages/AdminHome";
-import Register from "./pages/Register";
-import Privacy from "./pages/Privacy";
-import ConsentSettings from "./pages/ConsentSettings";
 import { LoginFlow } from "./components/auth/LoginFlow";
-import CitizenInterface from "./components/CitizenInterface";
-import OfficerInterface from "./features/officer/OfficerInterface";
-import MagistrateInterface from "./features/officer/MagistrateInterface";
-import ComplaintDetailPage from "./features/citizen/ComplaintDetailPage";
-import VoiceComplaintForm from "./components/VoiceComplaintForm";
-import OfficerVoiceAssistant from "./components/officevoiceassistant";
 
 // Third-party chat widgets are opt-in (VITE_ENABLE_DOCUCHAT) and loaded lazily.
 const DocuChatPage = lazy(() => import("./components/DocChatWidget"));
 const PoliceDocuChatWidget = lazy(() => import("./components/PoliiceDocChatWidget"));
+
+// Each screen group loads on demand so the first page stays small.
+const AdminHome = lazy(() => import("./pages/AdminHome"));
+const Register = lazy(() => import("./pages/Register"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const ConsentSettings = lazy(() => import("./pages/ConsentSettings"));
+const ComplaintDetailPage = lazy(() => import("./features/citizen/ComplaintDetailPage"));
+const CitizenInterface = lazy(() => import("./components/CitizenInterface"));
+const OfficerInterface = lazy(() => import("./features/officer/OfficerInterface"));
+const MagistrateInterface = lazy(() => import("./features/officer/MagistrateInterface"));
+const VoiceComplaintForm = lazy(() => import("./components/VoiceComplaintForm"));
+const OfficerVoiceAssistant = lazy(() => import("./components/officevoiceassistant"));
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +98,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginFlow />} />
@@ -118,6 +127,7 @@ const App = () => (
 
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

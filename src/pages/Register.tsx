@@ -139,7 +139,7 @@ const Register = () => {
     ) : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
+    <main className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-white to-blue-100" />
       <Card className="w-full max-w-lg relative z-10 rounded-2xl shadow-xl bg-white/80 backdrop-blur-md border border-gray-200">
         <CardHeader className="pt-6 pb-3 text-center">
@@ -313,7 +313,7 @@ const Register = () => {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };
 
