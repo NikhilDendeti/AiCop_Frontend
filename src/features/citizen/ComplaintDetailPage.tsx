@@ -62,7 +62,7 @@ export default function ComplaintDetailPage() {
                     <span className="font-medium">Progress</span>
                     <span className="font-bold text-blue-600">{progressOf(c)}%</span>
                   </div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-valuenow={progressOf(c)} aria-valuemin={0} aria-valuemax={100}>
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-label="Progress" aria-valuenow={progressOf(c)} aria-valuemin={0} aria-valuemax={100}>
                     <div className="h-full bg-blue-600 transition-all" style={{ width: `${progressOf(c)}%` }} />
                   </div>
                 </div>

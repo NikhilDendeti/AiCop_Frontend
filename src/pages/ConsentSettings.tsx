@@ -33,7 +33,7 @@ const ConsentSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="max-w-2xl mx-auto space-y-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/citizen-dashboard")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -74,7 +74,7 @@ const ConsentSettings = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 
