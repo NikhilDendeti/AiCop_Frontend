@@ -21,6 +21,8 @@ import LegalResources from "./LegalResources";
 import VoiceAssistance from "./VoiceAssistance";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationsBell } from "@/features/citizen/NotificationsBell";
 import { complaintsApi, progressOf } from "@/api/complaints";
 
@@ -40,6 +42,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
     null
   );
 
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["complaints", "mine", page],
@@ -109,50 +112,51 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                 className="hover:bg-white/60"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Sign out
+                {t("common.signOut")}
               </Button>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Citizen Dashboard
+                  {t("citizen.title")}
                 </h1>
                 <p className="text-sm md:text-base text-gray-600 font-medium">
-                  Manage your complaints and track progress
+                  {t("citizen.subtitle")}
                 </p>
               </div>
             </div>
+            <LanguageSwitcher />
             <NotificationsBell openPath={(id) => `/complaint/${id}`} />
             <Button variant="outline" size="sm" onClick={() => navigate("/privacy-settings")}>
-              Privacy
+              {t("common.privacy")}
             </Button>
             <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 px-3 py-1 md:px-4 md:py-2 shadow-lg">
               <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              Citizen Portal
+              {t("citizen.portal")}
             </Badge>
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 container mx-auto px-4 py-6 md:py-8">
+      <main className="relative z-10 container mx-auto px-4 py-6 md:py-8">
         {/* Welcome Section */}
         <div className="mb-6 md:mb-8 text-center">
           <div className="inline-flex items-center px-3 py-2 md:px-4 md:py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-4">
             <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-blue-600 mr-2" />
             <span className="text-blue-700 font-medium text-xs md:text-sm">
-              Your Complaint Dashboard
+              {t("citizen.yourDashboard")}
             </span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Welcome back!
+            {t("citizen.welcomeBack")}
           </h2>
           <p className="text-sm md:text-base text-gray-600">
-            Manage your complaints and stay updated on their progress
+            {t("citizen.welcomeSub")}
           </p>
         </div>
 
         {/* Quick Actions */}
         <div className="mb-8 md:mb-12">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
-            Quick Actions
+            {t("citizen.quickActions")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <Card
@@ -164,13 +168,13 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                   <Plus className="h-7 w-7 md:h-8 md:w-8 text-white" />
                   <div className="text-left">
                     <h3 className="text-white font-semibold text-lg md:text-xl">
-                      File New Complaint
+                      {t("citizen.fileNew")}
                     </h3>
                   </div>
                 </div>
 
                 <p className="text-sm md:text-base text-gray-700 font-medium">
-                  Start voice-guided complaint filing
+                  {t("citizen.fileNewDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -184,28 +188,28 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                   <Mic className="h-7 w-7 md:h-8 md:w-8 text-white" />
                   <div className="text-left">
                     <h3 className="text-white font-semibold text-lg md:text-xl">
-                      Voice Assistance
+                      {t("citizen.voiceAssist")}
                     </h3>
                   </div>
                 </div>
 
                 <p className="text-sm md:text-base text-gray-700 font-medium">
-                  Get help in Telugu, Hindi, or English
+                  {t("citizen.voiceAssistDesc")}
                 </p>
               </CardContent>
             </Card>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {isLoading && <p role="status" className="text-center text-gray-600">Loading your complaints...</p>}
+          {isLoading && <p role="status" className="text-center text-gray-600">{t("citizen.loadingComplaints")}</p>}
           {isError && (
             <div role="alert" className="text-center space-y-2">
-              <p className="text-red-600">We could not load your complaints.</p>
-              <Button size="sm" variant="outline" onClick={() => void refetch()}>Try again</Button>
+              <p className="text-red-600">{t("citizen.loadError")}</p>
+              <Button size="sm" variant="outline" onClick={() => void refetch()}>{t("common.tryAgain")}</Button>
             </div>
           )}
           {!isLoading && !isError && complaints.length === 0 && (
-            <p className="text-center text-gray-600">You have not filed any complaints yet.</p>
+            <p className="text-center text-gray-600">{t("citizen.none")}</p>
           )}
           {complaints.map((complaint) => {
             const progress = progressOf(complaint);
@@ -220,12 +224,10 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                     <div className="flex-1">
                       <CardTitle className="text-lg md:text-xl font-bold text-gray-900">
-                        {complaint.case_type
-                          .replace(/_/g, " ")
-                          .replace(/\b\w/g, (char) => char.toUpperCase())}
+                        {t(`caseType.${complaint.case_type}`, { defaultValue: complaint.case_type.replace(/_/g, " ") })}
                       </CardTitle>
                       <p className="text-sm md:text-base text-gray-600 font-medium">
-                        Complaint ref:{" "}
+                        {t("citizen.ref")}{" "}
                         {complaint.complaint_id.slice(0, 8).toUpperCase()}
                       </p>
                     </div>
@@ -235,9 +237,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                         " px-3 py-1 shadow-lg text-xs md:text-sm"
                       }
                     >
-                      {(complaint.status_label ?? complaint.status)
-                        .replace(/_/g, " ")
-                        .replace(/\b\w/g, (char) => char.toUpperCase())}
+                      {t(`status.${complaint.status}`, { defaultValue: complaint.status_label ?? complaint.status })}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -247,7 +247,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 text-xs md:text-sm">
                       <div>
                         <span className="text-gray-600 font-medium">
-                          Filed on: {complaint.incident_date}
+                          {t("citizen.filedOn", { date: complaint.incident_date })}
                         </span>
                       </div>
                     </div>
@@ -258,7 +258,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
 
                     <Button size="sm" variant="outline" onClick={() => navigate(`/complaint/${complaint.complaint_id}`)}>
                       <Eye className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-                      View details
+                      {t("citizen.viewDetails")}
                     </Button>
 
                     {/* Progress Section */}
@@ -266,7 +266,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
                     <div className="space-y-3">
                       <div className="flex justify-between text-xs md:text-sm">
                         <span className="font-semibold text-gray-900">
-                          Investigation Progress
+                          {t("citizen.progress")}
                         </span>
                         <span className="font-bold text-blue-600">
                           {progress}%
@@ -291,8 +291,8 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
         </div>
         {(data?.previous || data?.next) && (
           <div className="flex justify-center gap-3 mt-4">
-            <Button size="sm" variant="outline" disabled={!data?.previous} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-            <Button size="sm" variant="outline" disabled={!data?.next} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            <Button size="sm" variant="outline" disabled={!data?.previous} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
+            <Button size="sm" variant="outline" disabled={!data?.next} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
           </div>
         )}
 
@@ -308,14 +308,14 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
             <div className="text-center">
               <Phone className="h-8 w-8 md:h-12 md:w-12 text-red-600 mx-auto mb-3" />
               <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
-                Police Emergency
+                {t("citizen.police")}
               </h4>
               <p className="text-2xl md:text-3xl font-bold text-red-600">112</p>
             </div>
             <div className="text-center">
               <Phone className="h-8 w-8 md:h-12 md:w-12 text-pink-600 mx-auto mb-3" />
               <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
-                Women Helpline
+                {t("citizen.women")}
               </h4>
               <p className="text-2xl md:text-3xl font-bold text-pink-600">
                 1091
@@ -324,7 +324,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
             <div className="text-center">
               <Phone className="h-8 w-8 md:h-12 md:w-12 text-blue-600 mx-auto mb-3" />
               <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
-                Cybercrime
+                {t("citizen.cyber")}
               </h4>
               <p className="text-2xl md:text-3xl font-bold text-blue-600">
                 1930
@@ -339,7 +339,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
             <div className="flex items-center gap-3 mb-6">
               <AlertTriangle className="text-red-600 h-6 w-6 md:h-7 md:w-7" />
               <h3 className="text-xl md:text-2xl font-bold text-gray-800">
-                Emergency Contact Numbers
+                {t("citizen.emergencyTitle")}
               </h3>
             </div>
 
@@ -348,7 +348,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
               <div className="bg-red-50 hover:bg-red-100 transition-colors duration-300 rounded-2xl p-6 shadow-md border border-red-100">
                 <Phone className="mx-auto text-red-500 h-10 w-10 mb-3" />
                 <h4 className="text-lg font-semibold text-gray-800 mb-1">
-                  Police Emergency
+                  {t("citizen.police")}
                 </h4>
                 <p className="text-3xl font-bold text-red-600">112</p>
               </div>
@@ -357,7 +357,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
               <div className="bg-pink-50 hover:bg-pink-100 transition-colors duration-300 rounded-2xl p-6 shadow-md border border-pink-100">
                 <Phone className="mx-auto text-pink-500 h-10 w-10 mb-3" />
                 <h4 className="text-lg font-semibold text-gray-800 mb-1">
-                  Women Helpline
+                  {t("citizen.women")}
                 </h4>
                 <p className="text-3xl font-bold text-pink-600">1091</p>
               </div>
@@ -366,7 +366,7 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
               <div className="bg-blue-50 hover:bg-blue-100 transition-colors duration-300 rounded-2xl p-6 shadow-md border border-blue-100">
                 <Phone className="mx-auto text-blue-500 h-10 w-10 mb-3" />
                 <h4 className="text-lg font-semibold text-gray-800 mb-1">
-                  Cybercrime
+                  {t("citizen.cyber")}
                 </h4>
                 <p className="text-3xl font-bold text-blue-600">1930</p>
               </div>
@@ -378,31 +378,31 @@ const CitizenInterface = ({ onBack }: CitizenInterfaceProps) => {
         <div className="mt-8">
           <div className="bg-gradient-to-br from-white via-slate-100 to-white p-6 md:p-10 rounded-3xl shadow-xl border border-gray-200/40">
             <h3 className="text-lg md:text-2xl font-bold text-gray-800 mb-6">
-              Need Help?
+              {t("citizen.needHelp")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 24/7 Support */}
               <div>
                 <h4 className="text-md font-semibold text-gray-900 mb-2">
-                  24/7 Support
+                  {t("citizen.support")}
                 </h4>
                 <p className="text-gray-600 text-sm md:text-base">
-                  AI assistance available in Telugu, Hindi, and English
+                  {t("citizen.supportDesc")}
                 </p>
               </div>
               {/* Legal Aid */}
               <div>
                 <h4 className="text-md font-semibold text-gray-900 mb-2">
-                  Legal Aid
+                  {t("citizen.legalAid")}
                 </h4>
                 <p className="text-gray-600 text-sm md:text-base">
-                  Free legal consultation for your cases
+                  {t("citizen.legalAidDesc")}
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

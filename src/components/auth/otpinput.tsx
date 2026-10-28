@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface OTPInputProps {
   otp: string;
@@ -13,6 +14,7 @@ const LENGTH = 6;
  * and SMS autofill (several digits arriving in one box).
  */
 export const OTPInput = ({ otp, setOtp, disabled = false }: OTPInputProps) => {
+  const { t } = useTranslation();
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const apply = (index: number, raw: string) => {
@@ -39,7 +41,7 @@ export const OTPInput = ({ otp, setOtp, disabled = false }: OTPInputProps) => {
           type="text"
           inputMode="numeric"
           autoComplete={index === 0 ? "one-time-code" : "off"}
-          aria-label={`Digit ${index + 1}`}
+          aria-label={t("common.digit", { n: index + 1 })}
           value={otp[index] || ""}
           onChange={(e) => apply(index, e.target.value)}
           onPaste={(e) => {

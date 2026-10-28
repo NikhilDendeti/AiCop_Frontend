@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bot } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface Msg {
 
 /** Optional AI chat that collects the details and hands a report back to the form to review. */
 export function IntakeChat({ language, onReport }: { language: string; onReport: (r: Report) => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [disclosure, setDisclosure] = useState("");
@@ -66,7 +68,7 @@ export function IntakeChat({ language, onReport }: { language: string; onReport:
     return (
       <Button type="button" variant="outline" className="mb-6" onClick={() => void start()} disabled={busy}>
         <Bot className="h-4 w-4 mr-2" />
-        Describe it in a chat instead (AI)
+        {t("filing.chat")}
       </Button>
     );
   }
