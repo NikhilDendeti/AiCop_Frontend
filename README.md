@@ -1,73 +1,42 @@
-# Welcome to your Lovable project
+# SmartCop frontend
 
-## Project info
+React 18 + Vite + TypeScript + shadcn/ui. It is a client for the SmartCop Django REST backend (`/api/v1/`). The contract between the two lives in the backend repo at `docs/FRONTEND_CONTRACT.md`.
 
-**URL**: https://lovable.dev/projects/1b59e813-67d1-4fe9-9498-06627d8333a0
+## Run
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/1b59e813-67d1-4fe9-9498-06627d8333a0) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm ci
+cp .env.example .env     # then edit VITE_API_BASE_URL
+npm run dev              # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+## Environment variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Variable | Default | Meaning |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend origin, without `/api/v1` |
+| `VITE_ENABLE_DOCUCHAT` | `false` | Load the third-party DocuChat widget |
+| `VITE_ENABLE_VOICE_ASSISTANT` | `false` | Use backend voice and legal assistant endpoints (otherwise "coming soon") |
+| `VITE_IDLE_TIMEOUT_MINUTES` | `20` | Automatic sign-out after inactivity |
 
-**Use GitHub Codespaces**
+No secret belongs in a `VITE_*` variable: they are public in the built bundle. AI providers are only called by the backend.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Scripts
 
-## What technologies are used for this project?
+`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test`
 
-This project is built with:
+## How it talks to the backend
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `src/api/client.ts` is the only HTTP layer: Bearer token, the `{error:{code,message,details},request_id}` error format (`ApiError`), single-flight refresh on 401 (refresh tokens rotate and work once), `Idempotency-Key` for complaint creation.
+- `src/auth/tokenStore.ts` is the only place tokens are kept (access token in memory, refresh token in `sessionStorage`). Switching to an HttpOnly cookie later means changing this one file.
+- `src/auth/AuthContext.tsx` restores the session and loads `/auth/me`; the role always comes from the server. `RequireRole` guards routes.
+- Server data is fetched with React Query. Feedback uses `src/lib/notify.ts` (toasts), never `alert()`.
+- Tests use Vitest + Testing Library; `src/mocks/` holds MSW handlers that follow the contract (including planned endpoints).
 
-## How can I deploy this project?
+## Local demo logins
 
-Simply open [Lovable](https://lovable.dev/projects/1b59e813-67d1-4fe9-9498-06627d8333a0) and click on Share -> Publish.
+With the backend in dev mode (`DEV_FIXED_OTP=123456`) and `seed_demo` run, any login code is `123456`. Phones: citizen `9000000001`, head constable `9000000011`, sub-inspector `9000000012`, SHO `9000000013`, magistrate `9000000021`, admin `9000000031`.
 
-## Can I connect a custom domain to my Lovable project?
+## Hosting
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+`vercel.json` has suggested security headers; replace `YOUR-API-HOST` in the CSP. For error monitoring add Sentry's browser SDK in `src/main.tsx` and call `Sentry.captureException` from `ErrorBoundary.componentDidCatch`; never attach complaint text or personal data.
