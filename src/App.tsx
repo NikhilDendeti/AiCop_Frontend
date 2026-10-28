@@ -1,116 +1,128 @@
-import React, { useEffect, useState } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  useNavigate,
-  useLocation,
-  useParams,
-} from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { config } from "@/config";
+import { isApiError } from "@/api/errors";
+import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import { RequireRole } from "@/auth/RequireRole";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import DocuChatPage from "./components/DocChatWidget";
-import { CitizenDashboard } from "./components/CitizenDashboard";
-import { OfficerDashboard } from "./components/OfficerDashboard";
-import CitizenInterface from "./components/CitizenInterface";
-import OfficerInterface from "./components/OfficerInterface";
+import AdminHome from "./pages/AdminHome";
+import Register from "./pages/Register";
+import Privacy from "./pages/Privacy";
+import ConsentSettings from "./pages/ConsentSettings";
 import { LoginFlow } from "./components/auth/LoginFlow";
-import ComplaintPreview from "./components/complaintpreview";
-import VoiceComplaintForm from "./components/VoiceComplaintForm"; // <- Ensure this is imported if routing directly
-import PoliceDocuChatWidget from "./components/PoliiceDocChatWidget";
+import CitizenInterface from "./components/CitizenInterface";
+import OfficerInterface from "./features/officer/OfficerInterface";
+import MagistrateInterface from "./features/officer/MagistrateInterface";
+import ComplaintDetailPage from "./features/citizen/ComplaintDetailPage";
+import VoiceComplaintForm from "./components/VoiceComplaintForm";
 import OfficerVoiceAssistant from "./components/officevoiceassistant";
-import RoleSelector from "./components/selectRole";
-import RolePage from "./components/Rolepage";
 
-const queryClient = new QueryClient();
+// Third-party chat widgets are opt-in (VITE_ENABLE_DOCUCHAT) and loaded lazily.
+const DocuChatPage = lazy(() => import("./components/DocChatWidget"));
+const PoliceDocuChatWidget = lazy(() => import("./components/PoliiceDocChatWidget"));
 
-// Wrapper for login route with dynamic redirection
-const LoginRedirectWrapper = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: (count, error) => !(isApiError(error) && error.status >= 400 && error.status < 500) && count < 2,
+    },
+  },
+});
 
-  const searchParams = new URLSearchParams(location.search);
-  const userType = (searchParams.get("type") || "citizen") as
-    | "citizen"
-    | "officer";
+const OFFICER_ROLES = ["head_constable", "sub_inspector", "sho"] as const;
 
+const CitizenRoute = () => {
+  const { signOut } = useAuth();
   return (
-    <LoginFlow
-      userType={userType}
-      onLogin={() => {
-        if (userType === "citizen") {
-          navigate("/citizen-dashboard");
-        } else {
-          navigate("/officer-dashboard");
-        }
-      }}
-      onBack={() => navigate("/")}
-    />
+    <>
+      <CitizenInterface onBack={() => void signOut()} />
+      {config.enableDocuChat && (
+        <Suspense fallback={null}>
+          <DocuChatPage />
+        </Suspense>
+      )}
+    </>
   );
 };
 
-const ComplaintPreviewWrapper = () => {
-  const { complaintId } = useParams();
-  return <ComplaintPreview complaintId={complaintId || ""} />;
+const OfficerRoute = () => {
+  const { signOut } = useAuth();
+  return (
+    <>
+      <OfficerInterface onBack={() => void signOut()} />
+      {config.enableDocuChat && (
+        <Suspense fallback={null}>
+          <PoliceDocuChatWidget />
+        </Suspense>
+      )}
+    </>
+  );
+};
+
+const FileComplaintRoute = () => {
+  const navigate = useNavigate();
+  return <VoiceComplaintForm onBack={() => navigate("/citizen-dashboard")} />;
+};
+
+const MagistrateRoute = () => {
+  const { signOut } = useAuth();
+  return <MagistrateInterface onBack={() => void signOut()} />;
+};
+
+const OfficerVoiceRoute = () => {
+  const navigate = useNavigate();
+  return <OfficerVoiceAssistant onBack={() => navigate("/officer-dashboard")} />;
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<LoginRedirectWrapper />} />
-          <Route
-            path="/citizen-dashboard"
-            element={
-              <>
-                <CitizenInterface onBack={() => console.log("Back clicked")} />
-                <DocuChatPage />
-              </>
-            }
-          />
-          <Route path="/select-role" element={<RolePage />} />
-          <Route
-            path="/officer-dashboard"
-            element={
-              <>
-                <OfficerInterface onBack={() => console.log("Back clicked")} />
-                <PoliceDocuChatWidget />
-              </>
-            }
-          />
-          <Route
-            path="/complaint/:complaintId"
-            element={<ComplaintPreviewWrapper />}
-          />
-          <Route
-            path="/file-complaint"
-            element={<VoiceComplaintForm onBack={() => {}} />}
-          />
-          <Route
-            path="/officer-voice"
-            element={
-              <OfficerVoiceAssistant
-                onBack={function (): void {
-                  throw new Error("Function not implemented.");
-                }}
-              />
-            }
-          />
-          {/* Fallback route for 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginFlow />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/privacy" element={<Privacy />} />
+
+              <Route element={<RequireRole roles={["citizen"]} />}>
+                <Route path="/citizen-dashboard" element={<CitizenRoute />} />
+                <Route path="/privacy-settings" element={<ConsentSettings />} />
+                <Route path="/file-complaint" element={<FileComplaintRoute />} />
+                <Route path="/complaint/:complaintId" element={<ComplaintDetailPage />} />
+              </Route>
+
+              <Route element={<RequireRole roles={[...OFFICER_ROLES]} />}>
+                <Route path="/officer-dashboard" element={<OfficerRoute />} />
+                <Route path="/officer-voice" element={<OfficerVoiceRoute />} />
+              </Route>
+
+              <Route element={<RequireRole roles={["magistrate"]} />}>
+                <Route path="/magistrate" element={<MagistrateRoute />} />
+              </Route>
+
+              <Route element={<RequireRole roles={["admin"]} />}>
+                <Route path="/admin" element={<AdminHome />} />
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
