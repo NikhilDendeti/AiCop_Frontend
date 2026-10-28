@@ -19,9 +19,8 @@ import {
   Headphones,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import generateLegalResponse from "@/Ai-VoiceAssistant/generatepoliceresponse";
-import { speakText, stopSpeaking } from "@/Ai-VoiceAssistant/speaktext";
-import { transcribeVoice } from "@/Ai-VoiceAssistant/transcribevoice";
+import { speakText, stopSpeaking, transcribeVoice, askLegalAssistant, voiceAssistantEnabled } from "@/Ai-VoiceAssistant/voiceApi";
+import { notify } from "@/lib/notify";
 
 interface VoiceAssistanceProps {
   onBack: () => void;
@@ -134,6 +133,10 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
   //   };
 
   const handleVoiceRecord = async () => {
+    if (!voiceAssistantEnabled()) {
+      notify.info("Voice assistant coming soon", "This feature is not switched on yet.");
+      return;
+    }
     try {
       // 🛑 Stop any ongoing speech before recording
 
@@ -154,15 +157,22 @@ const VoiceAssistance = ({ onBack }: VoiceAssistanceProps) => {
           return;
         }
 
-        const { text, language } = await transcribeVoice(blob);
-        const langCode = selectedLanguage as "en" | "hi" | "te";
-        setSelectedLanguage(langCode);
-        setTranscript(text);
+        try {
+          const langCode = selectedLanguage as "en" | "hi" | "te";
+          const { text } = await transcribeVoice(blob, langCode);
+          setTranscript(text);
+          const reply = await askLegalAssistant(text, langCode);
+          const shown = reply.ai_available
+            ? `AI-generated information:
+${reply.answer}
 
-        const legalReply = await generateLegalResponse(text, langCode);
-        setAiResponse(legalReply);
-
-        speakText(legalReply, langCode);
+${reply.disclaimer}`
+            : "The assistant is not available right now. Please try again later.";
+          setAiResponse(shown);
+          void speakText(shown, langCode);
+        } catch (e) {
+          notify.apiError(e);
+        }
       };
 
       recorder.start();
