@@ -8,8 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Mic, MicOff, FileText, Send, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import ComplaintPreview from "./complaintpreview";
-import { apiURL } from "@/utils/apiUtil";
+import { useQuery } from "@tanstack/react-query";
+import { createComplaint, referenceApi } from "@/api/filing";
+import { newIdempotencyKey } from "@/api/client";
+import { uploadEvidence } from "@/api/evidence";
+import { notify } from "@/lib/notify";
+import { isApiError } from "@/api/errors";
+import { IntakeChat } from "@/features/citizen/IntakeChat";
+import { SectionsPreview } from "@/features/citizen/SectionsPreview";
 
 interface VoiceComplaintFormProps {
   onBack: () => void;
@@ -20,8 +26,16 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [caseType, setCaseType] = useState("Theft");
-  const [complaint, setComplaint] = useState<any>(null);
+  const [caseType, setCaseType] = useState("theft");
+  const [incidentDate, setIncidentDate] = useState("");
+  const [incidentTime, setIncidentTime] = useState("");
+  const [stationId, setStationId] = useState("");
+  const [stationError, setStationError] = useState<string | null>(null);
+  // One key per filing attempt: a retry after a network error reuses it, so the server cannot create a duplicate.
+  const idempotencyKey = useRef(newIdempotencyKey());
+  const caseTypes = useQuery({ queryKey: ["case-types"], queryFn: referenceApi.caseTypes, staleTime: Infinity });
+  const stations = useQuery({ queryKey: ["stations"], queryFn: referenceApi.stations, staleTime: Infinity });
+  const today = new Date().toISOString().slice(0, 10);
 
   interface Response {
     text?: string;
@@ -51,7 +65,6 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null
   );
-  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [videoURL, setVideoURL] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -125,16 +138,15 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
         const recorder = new MediaRecorder(stream);
         setMediaRecorder(recorder);
-        setRecordedChunks([]);
+        const chunks: Blob[] = [];
 
         recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            setRecordedChunks((prev) => [...prev, event.data]);
-          }
+          if (event.data.size > 0) chunks.push(event.data);
         };
 
         recorder.onstop = () => {
-          const blob = new Blob(recordedChunks, { type: "video/webm" });
+          stream.getTracks().forEach((t) => t.stop());
+          const blob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
           const url = URL.createObjectURL(blob);
           setVideoURL(url);
 
@@ -180,112 +192,71 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
     }
   };
 
+  const stationList = stations.data ?? [];
+  const effectiveStation = stationId || (stationList.length === 1 ? stationList[0].station_id : "");
+  // A complaint with no station is invisible to every officer, so a station is required.
+  const missingDetails =
+    !incidentDate || !incidentTime || !responses.incident?.toString().trim() || (stations.isSuccess && !effectiveStation);
+
   const generateComplaint = async () => {
-    setIsGenerating(true);
-    setTimeout(async () => {
-      setIsGenerating(false);
-      toast({
-        title: "Complaint Generated",
-        description:
-          "Your legal complaint has been drafted with relevant IPC sections.",
-      });
-
-      const complaintId = "c46c7259-4616-447a-9aeb-42997d9787b1";
-      if (complaintId) {
-        navigate(`/complaint/${complaintId}`);
-      }
-    }, 3000);
-  };
-
-  const handleSubmitComplaint = async () => {
-    try {
-      const videoEntries = Object.entries(responses).filter(
-        ([_, resp]) => resp?.videoBlob
-      );
-
-      const evidenceArray = await Promise.all(
-        videoEntries.map(async ([key, resp]) => {
-          const base64 = await blobToBase64(resp.videoBlob!);
-          return {
-            file_url: base64,
-            type: "video",
-          };
-        })
-      );
-
-      const incidentLocationBlob = responses.when_where?.videoBlob;
-      const incidentTypeBlob = responses.incident?.videoBlob;
-
-      const incident_location_video_url = incidentLocationBlob
-        ? await blobToBase64(incidentLocationBlob)
-        : "";
-
-      const incident_type_video_url = incidentTypeBlob
-        ? await blobToBase64(incidentTypeBlob)
-        : "";
-
-      const payload = {
-        incident_summary: responses.incident?.toString() || "",
-        case_type: caseType,
-        location: responses.when_where?.toString() || "",
-        incident_date: "2025-06-15",
-        incident_time: "15:45",
-        is_cognizable: true,
-        incident_location_video_url,
-        incident_type_video_url,
-        accused: [
-          {
-            name: "Unknown",
-            description: responses.involved?.toString() || "",
-            contact_info: "Unknown",
-            statement: responses.involved?.toString() || "",
-          },
-        ],
-        witnesses: [
-          {
-            name: "Witness",
-            contact_info: "N/A",
-            statement: responses.witnesses?.toString() || "",
-          },
-        ],
-        evidence: evidenceArray,
-      };
-
-      console.log("Payload:", JSON.stringify(payload)); // 👈 Debug log
-
-      const finalRes = await fetch(`${apiURL}/create_complaint/v1`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const finalJson = await finalRes.json();
-
-      if (!finalRes.ok)
-        throw new Error(finalJson.message || "Complaint submission failed");
-
-      toast({
-        title: "Complaint Submitted",
-        description: `Complaint ID: ${finalJson.complaint_id}`,
-      });
-
-      return finalJson.complaint_id;
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-      });
-      return null;
+    if (missingDetails) {
+      notify.error("Details missing", "Please describe the incident, enter when it happened and choose a police station.");
+      return;
     }
-  };
+    setIsGenerating(true);
+    setStationError(null);
+    try {
+      const answer = (id: string) => responses[id]?.toString() || "";
+      const { complaint_id } = await createComplaint(
+        {
+          case_type: caseType,
+          incident_summary: answer("incident"),
+          location: answer("when_where") || "Not stated",
+          incident_date: incidentDate,
+          incident_time: incidentTime.length === 5 ? `${incidentTime}:00` : incidentTime,
+          ...(effectiveStation ? { station_id: effectiveStation } : {}),
+          is_cognizable: true,
+          accused: answer("involved")
+            ? [{ name: "Unknown", description: answer("involved"), contact_info: "", statement: answer("involved") }]
+            : [],
+          witnesses: answer("witnesses")
+            ? [{ name: "Witness", contact_info: "", statement: answer("witnesses") }]
+            : [],
+        },
+        idempotencyKey.current,
+      );
+      idempotencyKey.current = newIdempotencyKey();
 
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+      // Video answers are evidence files, never part of the JSON body.
+      const videos = Object.entries(responses).filter(([, r]) => r?.videoBlob);
+      let failed = 0;
+      for (const [id, r] of videos) {
+        try {
+          await uploadEvidence(complaint_id, r.videoBlob!, `answer-${id}.webm`);
+        } catch {
+          failed += 1;
+        }
+      }
+      if (failed) {
+        notify.error(
+          "Complaint filed, but some recordings were not uploaded",
+          "You can add them again from the complaint page."
+        );
+      } else {
+        notify.success("Complaint submitted", "Your complaint has been filed.");
+      }
+      navigate(`/complaint/${complaint_id}`);
+    } catch (e) {
+      // The same Idempotency-Key is kept, so the retry with a station is safe.
+      if (isApiError(e) && e.fieldErrors.station_id) {
+        setStationError(e.fieldErrors.station_id);
+        setCurrentStep(1);
+      } else {
+        notify.apiError(e);
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSpeak = () => {
@@ -313,124 +284,6 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
     speechSynthesis.speak(utterance);
   };
-
-  if (currentStep > questions.length) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
-        <header className="bg-white shadow-sm border-b-2 border-green-400">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center space-x-3">
-              <Button variant="ghost" onClick={onBack} size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Complaint Generated
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Review and submit your legal complaint
-                </p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <ComplaintPreview complaintId={complaint} />
-
-        {/* <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="h-6 w-6 mr-2 text-green-600" />
-                Generated Legal Complaint
-              </CardTitle>
-              <div className="flex space-x-2">
-                <Badge className="bg-green-100 text-green-800">
-                  Auto-drafted
-                </Badge>
-                <Badge className="bg-blue-100 text-blue-800">
-                  IPC Sections Added
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-semibold mb-4">
-                  COMPLAINT UNDER SECTION 154 OF THE CODE OF CRIMINAL PROCEDURE,
-                  1973
-                </h3>
-                <div className="space-y-4 text-sm">
-                  <p>
-                    <strong>To:</strong> The Station House Officer, [Police
-                    Station Name]
-                  </p>
-                  <p>
-                    <strong>Subject:</strong> Complaint regarding Mobile Phone
-                    Theft
-                  </p>
-
-                  <div className="space-y-3">
-                    <p>Sir/Madam,</p>
-                    <p>
-                      I, the undersigned, hereby lodge this complaint regarding
-                      the theft of my mobile phone that occurred while I was
-                      traveling on a public bus.
-                    </p>
-
-                    <p>
-                      <strong>Details of the Incident:</strong>
-                    </p>
-                    <p>
-                      The incident took place on [Date] at approximately [Time]
-                      while I was traveling from [Location A] to [Location B] on
-                      bus number [Bus Number]. During the journey, my mobile
-                      phone (Brand: [Brand], Model: [Model], IMEI: [IMEI
-                      Number]) was stolen from my bag.
-                    </p>
-
-                    <p>
-                      <strong>Relevant IPC Sections:</strong>
-                    </p>
-                    <ul className="list-disc ml-6">
-                      <li>Section 378 - Theft</li>
-                      <li>Section 379 - Punishment for theft</li>
-                    </ul>
-
-                    <p>
-                      I request you to kindly register an FIR and investigate
-                      the matter. I am ready to cooperate with the investigation
-                      and provide any additional information required.
-                    </p>
-
-                    <p>Thanking you,</p>
-                    <p>
-                      [Your Name]
-                      <br />
-                      [Your Address]
-                      <br />
-                      [Contact Number]
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-4">
-                <Button className="flex-1 bg-green-600 hover:bg-green-700">
-                  <Send className="h-4 w-4 mr-2" />
-                  Submit Complaint
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Download Draft
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div> */}
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
@@ -493,6 +346,20 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           <Progress value={progress} className="h-2" />
         </div>
 
+        <IntakeChat
+          language={selectedLanguage}
+          onReport={(r) => {
+            setCaseType(r.case_type);
+            setIncidentDate(r.incident_date);
+            setIncidentTime(r.incident_time.slice(0, 5));
+            setResponses((prev) => ({
+              ...prev,
+              incident: new ResponseImpl(r.incident_summary, prev.incident?.videoBlob),
+              when_where: new ResponseImpl(r.location, prev.when_where?.videoBlob),
+            }));
+          }}
+        />
+
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Select Case Type
@@ -502,11 +369,64 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
             onChange={(e) => setCaseType(e.target.value)}
             className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="murder">Murder</option>
-            <option value="theft">Theft</option>
-            <option value="crime_against_women">Crime Against Women</option>
-            <option value="public_nuisance">Public Nuisance</option>
+            {(caseTypes.data ?? [{ case_type_id: "theft", name: "theft", label: "Theft" }]).map((t) => (
+              <option key={t.name} value={t.name}>
+                {t.label}
+              </option>
+            ))}
           </select>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="incident-date" className="block text-sm font-medium text-gray-700 mb-1">
+              Date of incident
+            </label>
+            <input
+              id="incident-date"
+              type="date"
+              max={today}
+              value={incidentDate}
+              onChange={(e) => setIncidentDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="incident-time" className="block text-sm font-medium text-gray-700 mb-1">
+              Time of incident
+            </label>
+            <input
+              id="incident-time"
+              type="time"
+              value={incidentTime}
+              onChange={(e) => setIncidentTime(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="station" className="block text-sm font-medium text-gray-700 mb-1">
+              Police station
+            </label>
+            <select
+              id="station"
+              value={effectiveStation}
+              required
+              onChange={(e) => setStationId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm"
+            >
+              <option value="" disabled>Select a station</option>
+              {(stations.data ?? []).map((st) => (
+                <option key={st.station_id} value={st.station_id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+            {stationError && (
+              <p role="alert" className="text-sm text-red-600 mt-1">
+                {stationError}
+              </p>
+            )}
+          </div>
         </div>
 
         {isGenerating ? (
@@ -514,11 +434,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
             <CardContent className="p-12 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <h3 className="text-lg font-semibold mb-2">
-                Generating Your Legal Complaint
+                Submitting Your Complaint
               </h3>
               <p className="text-gray-600">
-                AI is drafting your complaint and adding relevant IPC
-                sections...
+                Please wait while we file your complaint and upload your recordings...
               </p>
             </CardContent>
           </Card>
@@ -580,6 +499,11 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                 <label className="block text-sm font-medium mb-2">
                   Or type your response:
                 </label>
+                {currentQuestion.id === "incident" && (
+                  <div className="mb-3">
+                    <SectionsPreview summary={responses.incident?.toString() || ""} />
+                  </div>
+                )}
                 <Textarea
                   placeholder="Type your response here..."
                   value={responses[currentQuestion.id]?.toString() || ""}
@@ -612,7 +536,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                     }
                   >
                     {currentStep === questions.length
-                      ? "Generate Complaint"
+                      ? "Submit Complaint"
                       : "Next"}
                   </Button>
                 </div>
@@ -626,6 +550,3 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 };
 
 export default VoiceComplaintForm;
-function setLoading(arg0: boolean) {
-  throw new Error("Function not implemented.");
-}
