@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { notify } from "@/lib/notify";
@@ -6,6 +7,7 @@ import { AssessmentPreview, citizenApi } from "./api";
 
 /** Optional preview of AI-suggested legal sections before submitting. */
 export function SectionsPreview({ summary }: { summary: string }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AssessmentPreview | null>(null);
 
@@ -25,7 +27,7 @@ export function SectionsPreview({ summary }: { summary: string }) {
   return (
     <div className="space-y-2">
       <Button type="button" variant="outline" size="sm" disabled={busy || summary.trim().length < 10} onClick={() => void run()}>
-        Preview suggested legal sections (AI)
+        {t("filing.previewSections")}
       </Button>
       {result && (
         <div className="text-sm bg-gray-50 rounded p-3 space-y-1" role="status">

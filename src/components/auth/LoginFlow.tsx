@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OTPInput } from "./otpinput";
 import { authApi, homePathFor } from "@/api/auth";
 import { isApiError } from "@/api/errors";
@@ -14,21 +16,21 @@ import { useAuth } from "@/auth/AuthContext";
 const RESEND_SECONDS = 60;
 const PHONE_RE = /^\d{10}$/;
 
+type T = (key: string) => string;
+
 /** Plain-language text for a failed OTP request or verification. */
-export function otpErrorMessage(e: unknown, step: "phone" | "otp"): string {
-  if (!isApiError(e)) return "Something went wrong. Please try again.";
-  if (e.isNetwork) return "Cannot reach the server. Check your connection.";
-  if (e.status === 429)
-    return step === "otp"
-      ? "Too many incorrect attempts. This number is locked for a while; request a new code later."
-      : e.message || "Please wait before requesting another code.";
-  if (e.status === 401) return "That code is incorrect or has expired. Check it, or request a new code.";
-  if (e.status === 403) return "This account is not active. Contact your station or support.";
-  if (e.status === 503) return "We could not send the code right now. Please try again shortly.";
+export function otpErrorMessage(e: unknown, step: "phone" | "otp", t: T): string {
+  if (!isApiError(e)) return t("login.errors.generic");
+  if (e.isNetwork) return t("login.errors.network");
+  if (e.status === 429) return step === "otp" ? t("login.errors.locked") : t("login.errors.wait");
+  if (e.status === 401) return t("login.errors.wrongCode");
+  if (e.status === 403) return t("login.errors.inactive");
+  if (e.status === 503) return t("login.errors.noSms");
   return e.message;
 }
 
 export const LoginFlow = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { status, user, signIn, sessionEnded } = useAuth();
@@ -50,7 +52,7 @@ export const LoginFlow = () => {
 
   const requestCode = async () => {
     if (!PHONE_RE.test(phone)) {
-      setError("Please enter a valid 10-digit mobile number.");
+      setError(t("login.errors.phone"));
       return;
     }
     setBusy(true);
@@ -61,7 +63,7 @@ export const LoginFlow = () => {
       setStep("otp");
       setCooldown(RESEND_SECONDS);
     } catch (e) {
-      setError(otpErrorMessage(e, "phone"));
+      setError(otpErrorMessage(e, "phone", t));
       if (isApiError(e) && e.status === 429) setCooldown(RESEND_SECONDS);
     } finally {
       setBusy(false);
@@ -70,7 +72,7 @@ export const LoginFlow = () => {
 
   const verifyCode = async () => {
     if (otp.length !== 6) {
-      setError("Please enter the 6-digit code.");
+      setError(t("login.errors.code"));
       return;
     }
     setBusy(true);
@@ -81,7 +83,7 @@ export const LoginFlow = () => {
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from && from !== "/login" ? from : homePathFor(me.role), { replace: true });
     } catch (e) {
-      setError(otpErrorMessage(e, "otp"));
+      setError(otpErrorMessage(e, "otp", t));
       setOtp("");
     } finally {
       setBusy(false);
@@ -89,18 +91,19 @@ export const LoginFlow = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
+    <main className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-white to-blue-100" />
 
       <Card className="w-full max-w-md relative z-10 rounded-2xl shadow-xl bg-white/80 backdrop-blur-md border border-gray-200">
         <CardHeader className="pt-6 pb-3 text-center">
-          <CardTitle className="text-3xl font-semibold text-gray-800">Sign in</CardTitle>
+          <LanguageSwitcher className="flex gap-1 justify-center mb-3" />
+          <CardTitle className="text-3xl font-semibold text-gray-800">{t("login.title")}</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6 pb-8">
           {sessionEnded && !error && (
             <Alert>
-              <AlertDescription>Your session ended. Please sign in again.</AlertDescription>
+              <AlertDescription>{t("login.sessionEnded")}</AlertDescription>
             </Alert>
           )}
           {error && (
@@ -118,7 +121,7 @@ export const LoginFlow = () => {
               }}
             >
               <div>
-                <Label htmlFor="mobile">Mobile Number</Label>
+                <Label htmlFor="mobile">{t("login.mobile")}</Label>
                 <Input
                   id="mobile"
                   type="tel"
@@ -126,7 +129,7 @@ export const LoginFlow = () => {
                   autoComplete="tel-national"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="Enter 10-digit mobile number"
+                  placeholder={t("login.mobilePlaceholder")}
                   disabled={busy}
                 />
               </div>
@@ -134,16 +137,16 @@ export const LoginFlow = () => {
                 {busy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending code...
+                    {t("login.sendingCode")}
                   </>
                 ) : (
-                  "Send code"
+                  t("login.sendCode")
                 )}
               </Button>
 
-              <div className="text-center text-sm text-gray-500">or</div>
+              <div className="text-center text-sm text-gray-500">{t("login.or")}</div>
               <Button type="button" variant="outline" className="w-full" disabled>
-                Sign in with DigiLocker (coming soon)
+                {t("login.digilocker")}
               </Button>
             </form>
           )}
@@ -157,22 +160,19 @@ export const LoginFlow = () => {
               }}
             >
               <p className="text-sm text-gray-600 text-center">
-                Enter the 6-digit code sent to ******{phone.slice(-4)}.
+                {t("login.codeSent", { last4: phone.slice(-4) })}
               </p>
               <div>
-                <Label htmlFor="otp" className="sr-only">
-                  One-time code
-                </Label>
                 <OTPInput otp={otp} setOtp={setOtp} disabled={busy} />
               </div>
               <Button type="submit" disabled={busy} className="w-full">
                 {busy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
+                    {t("login.verifying")}
                   </>
                 ) : (
-                  "Verify code"
+                  t("login.verify")
                 )}
               </Button>
               <div className="flex justify-between text-sm">
@@ -184,7 +184,7 @@ export const LoginFlow = () => {
                     setError(null);
                   }}
                 >
-                  Change number
+                  {t("login.changeNumber")}
                 </button>
                 <button
                   type="button"
@@ -192,24 +192,24 @@ export const LoginFlow = () => {
                   disabled={cooldown > 0 || busy}
                   onClick={() => void requestCode()}
                 >
-                  {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                  {cooldown > 0 ? t("login.resendIn", { seconds: cooldown }) : t("login.resend")}
                 </button>
               </div>
             </form>
           )}
 
           <p className="text-center text-sm text-gray-600">
-            New here?{" "}
+            {t("login.newHere")}{" "}
             <Link to="/register" className="text-blue-600 hover:underline">
-              Create an account
+              {t("login.createAccount")}
             </Link>
           </p>
 
           <Button variant="outline" onClick={() => navigate("/")} className="w-full">
-            Back to Home
+            {t("login.backHome")}
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };

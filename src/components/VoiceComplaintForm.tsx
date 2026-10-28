@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const { t, i18n } = useTranslation();
+  // The form language is the app language; it drives the questions and the voice.
+  const selectedLanguage = i18n.language;
+  const setSelectedLanguage = (code: string) => void i18n.changeLanguage(code);
   const [caseType, setCaseType] = useState("theft");
   const [incidentDate, setIncidentDate] = useState("");
   const [incidentTime, setIncidentTime] = useState("");
@@ -200,7 +204,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
   const generateComplaint = async () => {
     if (missingDetails) {
-      notify.error("Details missing", "Please describe the incident, enter when it happened and choose a police station.");
+      notify.error(t("filing.missingTitle"), t("filing.missingDesc"));
       return;
     }
     setIsGenerating(true);
@@ -243,7 +247,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           "You can add them again from the complaint page."
         );
       } else {
-        notify.success("Complaint submitted", "Your complaint has been filed.");
+        notify.success(t("filing.filed"), t("filing.filedDesc"));
       }
       navigate(`/complaint/${complaint_id}`);
     } catch (e) {
@@ -298,10 +302,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  File New Complaint
+                  {t("filing.title")}
                 </h1>
                 <p className="text-sm text-gray-600">
-                  Voice-guided complaint filing
+                  {t("filing.subtitle")}
                 </p>
               </div>
             </div>
@@ -332,15 +336,15 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Progress */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium">
-              Step {currentStep} of {questions.length}
+              {t("filing.step", { current: currentStep, total: questions.length })}
             </span>
             <span className="text-sm text-gray-600">
-              {Math.round(progress)}% Complete
+              {t("filing.complete", { percent: Math.round(progress) })}
             </span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -362,7 +366,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Case Type
+            {t("filing.caseType")}
           </label>
           <select
             value={caseType}
@@ -380,7 +384,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label htmlFor="incident-date" className="block text-sm font-medium text-gray-700 mb-1">
-              Date of incident
+              {t("filing.date")}
             </label>
             <input
               id="incident-date"
@@ -393,7 +397,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           </div>
           <div>
             <label htmlFor="incident-time" className="block text-sm font-medium text-gray-700 mb-1">
-              Time of incident
+              {t("filing.time")}
             </label>
             <input
               id="incident-time"
@@ -405,7 +409,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           </div>
           <div>
             <label htmlFor="station" className="block text-sm font-medium text-gray-700 mb-1">
-              Police station
+              {t("filing.station")}
             </label>
             <select
               id="station"
@@ -414,7 +418,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
               onChange={(e) => setStationId(e.target.value)}
               className="w-full border border-gray-300 rounded-lg p-2 text-sm shadow-sm"
             >
-              <option value="" disabled>Select a station</option>
+              <option value="" disabled>{t("filing.selectStation")}</option>
               {(stations.data ?? []).map((st) => (
                 <option key={st.station_id} value={st.station_id}>
                   {st.name}
@@ -434,10 +438,10 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
             <CardContent className="p-12 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <h3 className="text-lg font-semibold mb-2">
-                Submitting Your Complaint
+                {t("filing.submitting")}
               </h3>
               <p className="text-gray-600">
-                Please wait while we file your complaint and upload your recordings...
+                {t("filing.submittingDesc")}
               </p>
             </CardContent>
           </Card>
@@ -445,7 +449,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                Question {currentStep}
+                {t("filing.question", { n: currentStep })}
                 <Volume2
                   onClick={handleSpeak}
                   className="h-5 w-5 ml-2 text-blue-600"
@@ -489,15 +493,15 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
 
                 <p className="mt-2 text-sm text-gray-600">
                   {isRecording
-                    ? "Recording..."
-                    : "Tap to record your video answer"}
+                    ? t("filing.recording")
+                    : t("filing.tapToRecord")}
                 </p>
               </div>
 
               {/* Text Response */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Or type your response:
+                  {t("filing.orType")}
                 </label>
                 {currentQuestion.id === "incident" && (
                   <div className="mb-3">
@@ -505,7 +509,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                   </div>
                 )}
                 <Textarea
-                  placeholder="Type your response here..."
+                  placeholder={t("filing.placeholder")}
                   value={responses[currentQuestion.id]?.toString() || ""}
                   onChange={(e) =>
                     handleTextResponse(currentQuestion.id, e.target.value)
@@ -521,7 +525,7 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                   onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
                   disabled={currentStep === 1}
                 >
-                  Previous
+                  {t("common.previous")}
                 </Button>
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "1rem" }}
@@ -536,15 +540,15 @@ const VoiceComplaintForm = ({ onBack }: VoiceComplaintFormProps) => {
                     }
                   >
                     {currentStep === questions.length
-                      ? "Submit Complaint"
-                      : "Next"}
+                      ? t("filing.submit")
+                      : t("common.next")}
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
-      </div>
+      </main>
     </div>
   );
 };
