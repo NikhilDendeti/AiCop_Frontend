@@ -33,6 +33,16 @@ No secret belongs in a `VITE_*` variable: they are public in the built bundle. A
 - Server data is fetched with React Query. Feedback uses `src/lib/notify.ts` (toasts), never `alert()`.
 - Tests use Vitest + Testing Library; `src/mocks/` holds MSW handlers that follow the contract (including planned endpoints).
 
+## End-to-end tests
+
+Playwright drives the real app against a real backend in dev mode (`DEV_FIXED_OTP=123456`, `seed_demo` applied).
+
+```bash
+E2E_API_URL=http://localhost:8001 npm run e2e
+```
+
+`E2E_BROWSER` picks the browser: `chrome` (default, uses the installed Chrome), `msedge`, or `chromium` (run `npx playwright install chromium` first; use this in CI). A `mobile` project checks the phone layout. The specs cover sign-in, role guards, filing with an idempotency key and evidence upload, the officer workflow, the magistrate queue and the admin AI settings. They create a few records on the dev database (marked `[e2e]`), so run them against a throwaway database, not production. They are not part of the default CI job because they need a running backend.
+
 ## Languages
 
 English, Hindi and Telugu via `react-i18next` (`src/i18n/`). The choice is remembered in the browser and sets `<html lang>`. Citizen screens (home, login, dashboard, filing form) are translated; officer, magistrate and admin screens are English only for now. To add a string, add the key to `locales/en.ts` and to `hi.ts` and `te.ts` (the TypeScript types and a test fail if a key or placeholder is missing). The Hindi and Telugu text is a draft and needs a native speaker's review before launch.
